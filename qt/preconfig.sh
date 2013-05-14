@@ -1,13 +1,4 @@
-#!/bin/bash
-
-
-# I had more luck using the version of qt/preconfig.sh
-# (clone phantomjs, copy the qt directory into node-chimera/qt)
-# Once compile is complete, copy from qt/lib to qt_compiled/lib and the same for qt/include
-
-
-
-cd qt
+#!/usr/bin/env bash
 
 COMPILE_JOBS=4
 
@@ -17,16 +8,10 @@ QT_CFG+=' -confirm-license'     # Silently acknowledge the license confirmation
 QT_CFG+=' -v'                   # Makes it easier to see what header dependencies are missing
 QT_CFG+=' -static'
 
-if [[ $OSTYPE = darwin* ]]; then
-    QT_CFG+=' -arch x86_64'
-    QT_CFG+=' -no-dwarf2'
-    QT_CFG+=' -openssl'
-else
-    QT_CFG+=' -system-freetype' # Freetype for text rendering
-    QT_CFG+=' -fontconfig'      # Fontconfig for better font matching
-    QT_CFG+=' -qpa'             # X11-less with QPA (aka Lighthouse)
-    QT_CFG+=' -openssl-linked'
-fi
+QT_CFG+=' -system-freetype' # Freetype for text rendering
+QT_CFG+=' -fontconfig'      # Fontconfig for better font matching
+QT_CFG+=' -qpa'             # X11-less with QPA (aka Lighthouse)
+QT_CFG+=' -openssl-linked'
 
 QT_CFG+=' -release'             # Build only for release (no debugging support)
 QT_CFG+=' -fast'                # Accelerate Makefiles generation
@@ -62,8 +47,7 @@ QT_CFG+=' -no-xmlpatterns'
 QT_CFG+=' -D QT_NO_GRAPHICSVIEW'
 QT_CFG+=' -D QT_NO_GRAPHICSEFFECT'
 
-# Sets the default graphics system to the raster enginecd qt
-
+# Sets the default graphics system to the raster engine
 QT_CFG+=' -graphicssystem raster'
 
 # Unix
@@ -81,15 +65,12 @@ QT_CFG+=' -qt-libjpeg'
 QT_CFG+=' -qt-libpng'
 QT_CFG+=' -qt-zlib'
 
-
 # Useless styles
 QT_CFG+=' -D QT_NO_STYLESHEET'
 QT_CFG+=' -D QT_NO_STYLE_CDE'
 QT_CFG+=' -D QT_NO_STYLE_CLEANLOOKS'
 QT_CFG+=' -D QT_NO_STYLE_MOTIF'
 QT_CFG+=' -D QT_NO_STYLE_PLASTIQUE'
-QT_CFG+=' -L../openssl -lssl -lcrypto'
-
 
 until [ -z "$1" ]; do
     case $1 in
@@ -118,11 +99,10 @@ done
 
 # For parallelizing the bootstrapping process, e.g. qmake and friends.
 export MAKEFLAGS=-j$COMPILE_JOBS
-
-#export OPENSSL_LIBS='-L../openssl -lssl -lcrypto'
+export OPENSSL_LIBS='-L ../openssl -lssl -lcrypto'
 
 #./configure -prefix ../qt_compiled $QT_CFG
-make -j$COMPILE_JOBS install
+make -j$COMPILE_JOBS
 
 cd src/3rdparty/webkit/Source/WebCore
 make -j$COMPILE_JOBS
@@ -132,6 +112,13 @@ cd src/3rdparty/webkit/Source/JavaScriptCore
 make -j$COMPILE_JOBS
 cd ../../../../..
 
+
+# Build text codecs
+#pushd src/plugins/codecs/
+#make -j$COMPILE_JOBS
+#popd
+
+
 # Extra step to ensure the static libraries are found
 cp -rp src/3rdparty/webkit/Source/JavaScriptCore/release/* ../qt_compiled/lib/
 cp -rp src/3rdparty/webkit/Source/WebCore/release/* ../qt_compiled/lib/
@@ -139,8 +126,7 @@ cp -rp src/3rdparty/webkit/Source/WebCore/release/* ../qt_compiled/lib/
 cat include/QtGui/QtGui | grep -v -e 'qs60' -e 'qvfbhdr' -e 'qwsembedwidget' > ../qt_compiled/include/QtGui/QtGui
 
 rm -rf ../qt_compiled/include/QtScript
-rm -rf ../qt_compiled/include/QtWebKit
 cd ../qt_compiled/include
-ln -s ./include/QtScript .
-ln -s ./include/QtWebKit .
+ln -s ../../qt/include/QtScript .
+ln -s ../../qt/include/QtWebKit .
 
