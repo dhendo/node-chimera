@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'chimera.h'
 **
-** Created: Mon Jan 7 12:29:32 2013
+** Created: Tue Jun 4 21:19:06 2013
 **      by: The Qt Meta Object Compiler version 63 (Qt 4.8.4)
 **
 ** WARNING! All changes made in this file will be lost!
@@ -109,8 +109,8 @@ static const uint qt_meta_data_Chimera[] = {
        6,       // revision
        0,       // classname
        0,    0, // classinfo
-       7,   14, // methods
-       5,   49, // properties
+      10,   14, // methods
+       5,   64, // properties
        0,    0, // enums/sets
        0,    0, // constructors
        0,       // flags
@@ -118,31 +118,37 @@ static const uint qt_meta_data_Chimera[] = {
 
  // slots: signature, parameters, type, tag, flags
       23,   14,    9,    8, 0x0a,
-      59,   40,    8,    8, 0x0a,
-     100,   85,    8,    8, 0x0a,
-     147,  137,    8,    8, 0x2a,
-     180,  175,    8,    8, 0x2a,
-     199,    8,    8,    8, 0x08,
-     212,    8,    8,    8, 0x08,
+      51,    8,   40,    8, 0x0a,
+      85,   66,    8,    8, 0x0a,
+     126,  111,    8,    8, 0x0a,
+     173,  163,    8,    8, 0x2a,
+     206,  201,    8,    8, 0x2a,
+     234,  225,    8,    8, 0x0a,
+     257,    8,    8,    8, 0x08,
+     270,    8,    8,    8, 0x08,
+     291,  286,  279,    8, 0x08,
 
  // properties: name, type, flags
-     229,  221, 0x0a095103,
-     237,  221, 0x0a095001,
-     248,  221, 0x0a095103,
-     254,  221, 0x0a095103,
-     276,  264, 0x08095103,
+     320,  312, 0x0a095103,
+     328,  312, 0x0a095001,
+     339,  312, 0x0a095103,
+     345,  312, 0x0a095103,
+     367,  355, 0x08095103,
 
        0        // eod
 };
 
 static const char qt_meta_stringdata_Chimera[] = {
     "Chimera\0\0bool\0fileName\0capture(QString)\0"
-    "errorResult,result\0callback(QString,QString)\0"
-    "type,arg1,arg2\0sendEvent(QString,QVariant,QVariant)\0"
+    "QByteArray\0captureBytes()\0errorResult,result\0"
+    "callback(QString,QString)\0type,arg1,arg2\0"
+    "sendEvent(QString,QVariant,QVariant)\0"
     "type,arg1\0sendEvent(QString,QVariant)\0"
-    "type\0sendEvent(QString)\0finish(bool)\0"
-    "inject()\0QString\0content\0loadStatus\0"
-    "state\0userAgent\0QVariantMap\0viewportSize\0"
+    "type\0sendEvent(QString)\0selector\0"
+    "clipToElement(QString)\0finish(bool)\0"
+    "inject()\0QImage\0size\0renderToImage(QSize)\0"
+    "QString\0content\0loadStatus\0state\0"
+    "userAgent\0QVariantMap\0viewportSize\0"
 };
 
 void Chimera::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
@@ -153,12 +159,17 @@ void Chimera::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, voi
         switch (_id) {
         case 0: { bool _r = _t->capture((*reinterpret_cast< const QString(*)>(_a[1])));
             if (_a[0]) *reinterpret_cast< bool*>(_a[0]) = _r; }  break;
-        case 1: _t->callback((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2]))); break;
-        case 2: _t->sendEvent((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QVariant(*)>(_a[2])),(*reinterpret_cast< const QVariant(*)>(_a[3]))); break;
-        case 3: _t->sendEvent((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QVariant(*)>(_a[2]))); break;
-        case 4: _t->sendEvent((*reinterpret_cast< const QString(*)>(_a[1]))); break;
-        case 5: _t->finish((*reinterpret_cast< bool(*)>(_a[1]))); break;
-        case 6: _t->inject(); break;
+        case 1: { QByteArray _r = _t->captureBytes();
+            if (_a[0]) *reinterpret_cast< QByteArray*>(_a[0]) = _r; }  break;
+        case 2: _t->callback((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QString(*)>(_a[2]))); break;
+        case 3: _t->sendEvent((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QVariant(*)>(_a[2])),(*reinterpret_cast< const QVariant(*)>(_a[3]))); break;
+        case 4: _t->sendEvent((*reinterpret_cast< const QString(*)>(_a[1])),(*reinterpret_cast< const QVariant(*)>(_a[2]))); break;
+        case 5: _t->sendEvent((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 6: _t->clipToElement((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 7: _t->finish((*reinterpret_cast< bool(*)>(_a[1]))); break;
+        case 8: _t->inject(); break;
+        case 9: { QImage _r = _t->renderToImage((*reinterpret_cast< QSize(*)>(_a[1])));
+            if (_a[0]) *reinterpret_cast< QImage*>(_a[0]) = _r; }  break;
         default: ;
         }
     }
@@ -196,9 +207,9 @@ int Chimera::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 7)
+        if (_id < 10)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 7;
+        _id -= 10;
     }
 #ifndef QT_NO_PROPERTIES
       else if (_c == QMetaObject::ReadProperty) {
