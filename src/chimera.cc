@@ -218,6 +218,13 @@ void Chimera::open(const QString &address)
     m_mutex.lock();
     m_page.mainFrame()->setUrl(QUrl(address));
 }
+void Chimera::renderSnippet(const QString &html)
+{
+    m_page.triggerAction(QWebPage::Stop);
+    m_loadStatus = "loading";
+    m_mutex.lock();
+    m_page.mainFrame()->setHtml(html);
+}
 
 void Chimera::wait()
 {
@@ -237,19 +244,101 @@ bool Chimera::capture(const QString &fileName)
     QSize viewportSize = m_page.viewportSize();
     QSize pageSize = m_page.mainFrame()->contentsSize();
     if (pageSize.isEmpty())
-        return false;
+        return NULL;
+    QImage buffer = renderToImage(pageSize);
 
-    QImage buffer(pageSize, QImage::Format_ARGB32_Premultiplied);
-    buffer.fill(Qt::transparent);
-    QPainter p(&buffer);
-    p.setRenderHint(QPainter::Antialiasing, true);
-    p.setRenderHint(QPainter::TextAntialiasing, true);
-    p.setRenderHint(QPainter::SmoothPixmapTransform, true);
-    m_page.setViewportSize(pageSize);
-    m_page.mainFrame()->render(&p);
-    p.end();
     m_page.setViewportSize(viewportSize);
     return buffer.save(fileName);
+}
+
+QImage Chimera::renderToImage(QSize pageSize)
+{
+    QRect frameRect = QRect(QPoint(0,0), pageSize);
+    if(!m_clipRect.isNull()){
+        frameRect = m_clipRect;
+        //std::cout << "Frame Clipped to rect topLeft: " << m_clipRect.topLeft().x() << "," << m_clipRect.topLeft().y() << std::endl;
+        //std::cout << "Frame Clipped to rect bottomRight: " << m_clipRect.bottomRight().x() << "," << m_clipRect.bottomRight().y() << std::endl;
+        pageSize = QSize(frameRect.width(),frameRect.height());
+    }
+
+#ifdef Q_OS_WIN32
+    QImage::Format format = QImage::Format_ARGB32_Premultiplied;
+#else
+    QImage::Format format = QImage::Format_ARGB32;
+#endif
+
+    QImage buffer(pageSize, format);
+    buffer.fill(Qt::transparent);
+
+    // Render code ported from PhantomJS http://phantomjs.org/
+
+    QPainter painter;
+    // We use tiling approach to work-around Qt software rasterizer bug
+    // when dealing with very large paint device.
+    // See http://code.google.com/p/phantomjs/issues/detail?id=54.
+    const int tileSize = 4096;
+    int htiles = (buffer.width() + tileSize - 1) / tileSize;
+    int vtiles = (buffer.height() + tileSize - 1) / tileSize;
+    for (int x = 0; x < htiles; ++x) {
+        for (int y = 0; y < vtiles; ++y) {
+
+            QImage tileBuffer(tileSize, tileSize, format);
+            tileBuffer.fill(qRgba(255, 255, 255, 0));
+
+            // Render the web page onto the small tile first
+            painter.begin(&tileBuffer);
+            painter.setRenderHint(QPainter::Antialiasing, true);
+            painter.setRenderHint(QPainter::TextAntialiasing, true);
+            painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+            painter.translate(-frameRect.left(), -frameRect.top());
+            painter.translate(-x * tileSize, -y * tileSize);
+            m_page.mainFrame()->render(&painter, QRegion(frameRect));
+            painter.end();
+
+            // Copy the tile to the main buffer
+            painter.begin(&buffer);
+            painter.setCompositionMode(QPainter::CompositionMode_Source);
+            painter.drawImage(x * tileSize, y * tileSize, tileBuffer);
+            painter.end();
+        }
+    }
+    return buffer;
+}
+
+
+QByteArray Chimera::captureBytes()
+{
+    QSize viewportSize = m_page.viewportSize();
+    QSize pageSize = m_page.mainFrame()->contentsSize();
+    if (pageSize.isEmpty())
+        return NULL;
+    QImage buffer = renderToImage(pageSize);
+
+    m_page.setViewportSize(viewportSize);
+
+    QByteArray ba;
+    QBuffer buff(&ba);
+    buff.open(QIODevice::WriteOnly);
+    buffer.save(&buff, "PNG");
+    return buff.buffer();
+}
+
+
+void Chimera::clipToElement(const QString &selector){
+    if(!selector.isNull()){
+        QWebElement element = m_page.mainFrame()->findFirstElement(selector);
+        if(!element.isNull()){
+            m_clipRect = element.geometry();
+            return;
+        }else{
+            std::cout << "Element not found for clipping" << std::endl;
+        }
+    }else{
+        std::cout << "Selector was null for clipping" << std::endl;
+    }
+    // Set null rectangle
+    m_clipRect.setWidth(0);
+    m_clipRect.setHeight(0);
 }
 
 int Chimera::returnValue() const
@@ -304,6 +393,9 @@ void Chimera::setViewportSize(const QVariantMap &size)
     if (w > 0 && h > 0)
         m_page.setViewportSize(QSize(w, h));
 }
+
+
+
 
 QVariantMap Chimera::viewportSize() const
 {
