@@ -18,3 +18,5 @@ npm-debug.log
 
 qt_compiled
 lib/chimera.node
+openssl
+qt/
