@@ -24,8 +24,11 @@ void Browser::Initialize(Handle<Object> target) {
   tpl->InstanceTemplate()->SetInternalFieldCount(1);  
 
   tpl->PrototypeTemplate()->Set(String::NewSymbol("open"), FunctionTemplate::New(Open)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("renderSnippet"), FunctionTemplate::New(RenderSnippet)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("clipToElement"), FunctionTemplate::New(ClipToElement)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("close"), FunctionTemplate::New(Close)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("capture"), FunctionTemplate::New(Capture)->GetFunction());
+  tpl->PrototypeTemplate()->Set(String::NewSymbol("captureBytes"), FunctionTemplate::New(CaptureBytes)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("cookies"), FunctionTemplate::New(Cookies)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("setCookies"), FunctionTemplate::New(SetCookies)->GetFunction());
   tpl->PrototypeTemplate()->Set(String::NewSymbol("setProxy"), FunctionTemplate::New(SetProxy)->GetFunction());
@@ -124,6 +127,25 @@ Handle<Value> Browser::SetCookies(const Arguments& args) {
   return scope.Close(Undefined());
 }
 
+Handle<Value> Browser::ClipToElement(const Arguments& args) {
+  HandleScope scope;
+
+  if (!args[0]->IsString()) {
+      return ThrowException(Exception::TypeError(
+          String::New("First argument must be an element selector")));
+  }
+
+  Browser* w = ObjectWrap::Unwrap<Browser>(args.This());
+  Chimera* chimera = w->getChimera();
+
+  if (0 != chimera) {
+    chimera->clipToElement(top_v8::ToQString(args[0]->ToString()));
+  }
+
+  return scope.Close(Undefined());
+}
+
+
 Handle<Value> Browser::SetProxy(const Arguments& args) {
   HandleScope scope;
 
@@ -161,6 +183,21 @@ Handle<Value> Browser::Capture(const Arguments& args) {
  
   return scope.Close(Undefined());
 }
+
+Handle<Value> Browser::CaptureBytes(const Arguments& args) {
+  HandleScope scope;
+
+  Browser* w = ObjectWrap::Unwrap<Browser>(args.This());
+  Chimera* chimera = w->getChimera();
+  QByteArray qb;
+  if (0 != chimera) {
+    qb = chimera->captureBytes();
+  }
+
+  return scope.Close(top_v8::ToNodeBuffer(qb)->handle_);
+}
+
+
   
 Handle<Value> Browser::Close(const Arguments& args) {
   HandleScope scope;
@@ -219,7 +256,6 @@ Handle<Value> Browser::Open(const Arguments& args) {
     work->url = top_v8::ToQString(args[0]->ToString());
     work->chimera->open(work->url);
   } else {
-    std::cout << "debug -- about to call execute" << std::endl;
     work->chimera->execute();
   }
 
@@ -228,3 +264,56 @@ Handle<Value> Browser::Open(const Arguments& args) {
   
   return Undefined();
 }
+
+Handle<Value> Browser::RenderSnippet(const Arguments& args) {
+  HandleScope scope;
+
+  if (!args[1]->IsString()) {
+      return ThrowException(Exception::TypeError(
+          String::New("Second argument must be a javascript string")));
+  }
+
+  if (!args[2]->IsFunction()) {
+      return ThrowException(Exception::TypeError(
+          String::New("Third argument must be a callback function")));
+  }
+
+  Local<Function> callback = Local<Function>::Cast(args[2]);
+
+  BWork* work = new BWork();
+  work->error = false;
+  work->request.data = work;
+  work->callback = Persistent<Function>::New(callback);
+
+  Browser* w = ObjectWrap::Unwrap<Browser>(args.This());
+  Chimera* chimera = w->getChimera();
+
+  if (0 != chimera) {
+    work->chimera = chimera;
+  } else {
+    work->chimera = new Chimera();
+    work->chimera->setUserAgent(w->userAgent());
+    work->chimera->setLibraryCode(w->libraryCode());
+    work->chimera->setCookies(w->cookies());
+    if (w->disableImages_) {
+      work->chimera->disableImages();
+    }
+    w->setChimera(work->chimera);
+  }
+
+  work->chimera->setEmbedScript(top_v8::ToQString(args[1]->ToString()));
+
+  if (args[0]->IsString()) {
+    work->html = top_v8::ToQString(args[0]->ToString());
+    work->chimera->renderSnippet(work->html);
+  } else {
+    work->chimera->execute();
+  }
+
+  int status = uv_queue_work(uv_default_loop(), &work->request, AsyncWork, (uv_after_work_cb)AsyncAfter);
+  assert(status == 0);
+
+  return Undefined();
+}
+
+
