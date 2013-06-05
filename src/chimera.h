@@ -4,6 +4,7 @@
 #include <QtGui>
 #include <QtWebKit/QWebPage>
 #include <QtWebKit/QWebFrame>
+#include <QtWebKit/QWebElement>
 #include <QTimer>
 #include <QNetworkAccessManager>
 #include <QWebHistoryItem>
@@ -68,22 +69,30 @@ public:
     void setViewportSize(const QVariantMap &size);
     QVariantMap viewportSize() const;
 
+
     void wait();
     void execute();
     
     void open(const QString &address);
+    void renderSnippet(const QString &html);
     void exit(int code = 0);
 
     void setProxy(const QString &type, const QString &host, int port, const QString &username, const QString &password);
 
+
 public slots:
     bool capture(const QString &fileName);
+    QByteArray captureBytes();
     void callback(const QString &errorResult, const QString &result);
     void sendEvent(const QString &type, const QVariant &arg1 = QVariant(), const QVariant &arg2 = QVariant());
+    void clipToElement(const QString &selector);
+
+
 
 private slots:
     void finish(bool);
     void inject();
+    QImage renderToImage(QSize size);
 
 private:
     QString m_loadStatus;
@@ -97,6 +106,7 @@ private:
     QString m_libraryCode;
     QString m_script;
     QString m_state;
+    QRect m_clipRect;
 };
 
 #endif

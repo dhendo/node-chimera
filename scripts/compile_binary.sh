@@ -1,5 +1,5 @@
 #!/bin/sh
-
+./qt/bin/moc ./src/chimera.h -o ./src/chimera.moc
 node-gyp rebuild
 cd build
 if [[ $OSTYPE = darwin* ]]; then
